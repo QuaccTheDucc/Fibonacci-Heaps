@@ -6,15 +6,20 @@
 public class FibonacciHeap
 {
 
+    public HeapNode min;
+    public HeapNode sentinel;
+    public int size;
+    public int numOfRoots;
+
    /**
     * public boolean isEmpty()
     *
-    * Returns true if and only if the heap is empty.
+    * Returns true if and only if the heap is empty which is if and only if size == 0.
     *   
     */
     public boolean isEmpty()
     {
-    	return false; // should be replaced by student code
+    	return size == 0;
     }
 		
    /**
@@ -25,9 +30,26 @@ public class FibonacciHeap
     * 
     * Returns the newly created node.
     */
-    public HeapNode insert(int key)
-    {    
-    	return new HeapNode(key); // should be replaced by student code
+    public HeapNode insert(int key) {
+        HeapNode newNode = new HeapNode(key);
+        if (isEmpty()){
+            sentinel = new HeapNode(true);
+            sentinel.setPrev(newNode);
+            sentinel.setNext(newNode);
+            newNode.setNext(sentinel);
+            newNode.setPrev(sentinel);
+            min = sentinel.getPrev();
+        } else { // implement lazy insert.
+            HeapNode prevLast = sentinel.getNext();
+            newNode.setPrev(sentinel);
+            newNode.setNext(prevLast);
+            sentinel.setNext(newNode);
+            prevLast.setPrev(newNode);
+            if (key < min.getKey()) min = newNode; // change min if necessary.
+        }
+        size++;
+        numOfRoots++;
+    	return newNode;
     }
 
    /**
@@ -38,11 +60,91 @@ public class FibonacciHeap
     */
     public void deleteMin()
     {
-     	return; // should be replaced by student code
-     	
+        if (!isEmpty()){
+            if (size == 1){ // if min is the only node in the heap.
+                size = 0;
+                numOfRoots = 0;
+                min = null;
+            } else {
+                if (numOfRoots == 1){
+                    sentinel = min.getChild();
+                    sentinel.setParent(null);
+
+                    min = null;
+                    size--;
+                    numOfRoots--;
+                    numOfRoots += getNumOfSiblingsOfSen(sentinel);
+                } else {
+                    HeapNode minChild = min.getChild();
+                    HeapNode prevOfMin = min.getPrev();
+                    HeapNode nextOfMin = min.getNext();
+                    HeapNode first = minChild.getPrev();
+                    HeapNode last = minChild.getNext();
+
+                    min = null;
+                    size--;
+                    numOfRoots--;
+                    numOfRoots += getNumOfSiblingsOfSen(minChild);
+
+                    first.setNext(nextOfMin);
+                    nextOfMin.setPrev(first);
+                    last.setPrev(prevOfMin);
+                    prevOfMin.setNext(last);
+                }
+
+                // now we melded min's children to the forest, and we can start successive linking.
+                successiveLinking();
+            }
+        }
     }
 
-   /**
+    /**
+     *
+     * @param sentinel
+     * @return Number of sentinel's siblings.
+     */
+    private int getNumOfSiblingsOfSen(HeapNode sentinel) {
+        HeapNode temp = sentinel.getNext();
+        int count = 0;
+        while (temp != sentinel){
+            count ++;
+            temp = temp.getNext();
+        }
+        return count;
+    }
+
+
+    /**
+     * Mimics successive linking process taught in class.
+     */
+    private void successiveLinking() {
+        HeapNode[] buckets = new HeapNode[(int) Math.ceil(Math.log1p(size) / Math.log(2))]; // there will be at most log_2(size) buckets.
+        HeapNode temp = sentinel.getPrev();
+        while (temp != sentinel){
+            int rank = temp.getRank();
+            HeapNode temp2 = temp;
+            while (buckets[rank] != null) {
+                // linking
+                HeapNode a = buckets[rank];
+                buckets[rank] = null;
+                HeapNode b = temp2;
+
+                if (a.getKey() <= b.getKey()) {
+                    a.addChild(b);
+                    temp2 = a;
+                } else {
+                    b.addChild(a);
+                    temp2 = b;
+                }
+
+                rank++;
+            }
+            buckets[rank] = temp2;
+            temp = temp.getNext();
+        }
+    }
+
+    /**
     * public HeapNode findMin()
     *
     * Returns the node of the heap whose key is minimal, or null if the heap is empty.
@@ -50,7 +152,7 @@ public class FibonacciHeap
     */
     public HeapNode findMin()
     {
-    	return new HeapNode(678);// should be replaced by student code
+    	return min; // returns null if and only if isEmpty()
     } 
     
    /**
@@ -59,9 +161,79 @@ public class FibonacciHeap
     * Melds heap2 with the current heap.
     *
     */
-    public void meld (FibonacciHeap heap2)
+    public void meld(FibonacciHeap heap2)
     {
-    	  return; // should be replaced by student code   		
+        if (isEmpty()){
+            HeapNode heap2First = heap2.getSentinel().getPrev();
+            HeapNode heap2Last = heap2.getSentinel().getNext();
+            sentinel = new HeapNode(true);
+
+            sentinel.setPrev(heap2First);
+            sentinel.setNext(heap2Last);
+            heap2First.setNext(sentinel);
+            heap2Last.setPrev(sentinel);
+
+            min = heap2.getMin();
+            size = heap2.size();
+        }
+        // implements lazy meld.
+        else if (!heap2.isEmpty()) {
+            // update min if necessary.
+            HeapNode heap2Min = heap2.getMin();
+            if (heap2Min.getKey() < min.getKey())
+                min = heap2Min;
+
+            HeapNode afterSen, beforeSen, bridgeNodeLeft, bridgeNodeRight;
+
+            if (numOfRoots != 1 && heap2.numOfRoots != 1) {
+                HeapNode first1 = sentinel.getPrev();
+                HeapNode last1 = sentinel.getNext();
+                HeapNode first2 = heap2.getSentinel().getPrev();
+                HeapNode last2 = first2.getNext();
+
+                afterSen = last1;
+                beforeSen = first2;
+                bridgeNodeLeft = first1;
+                bridgeNodeRight = last2;
+            } else if (numOfRoots == 1 && heap2.numOfRoots != 1){
+                HeapNode a = sentinel.getPrev();
+                HeapNode f = heap2.getSentinel().getPrev();
+                HeapNode l = heap2.getSentinel().getNext();
+
+                afterSen = a;
+                beforeSen = f;
+                bridgeNodeLeft = a;
+                bridgeNodeRight = l;
+            } else if (heap2.getNumOfRoots() == 1 && numOfRoots != 1){
+                HeapNode a = heap2.getSentinel().getPrev();
+                HeapNode f = sentinel.getPrev();
+                HeapNode l = sentinel.getNext();
+
+                afterSen = l;
+                beforeSen = a;
+                bridgeNodeLeft = f;
+                bridgeNodeRight = a;
+            } else {
+                HeapNode a = sentinel.getPrev();
+                HeapNode b = heap2.getSentinel().getPrev();
+
+                afterSen = a;
+                beforeSen = b;
+                bridgeNodeLeft = a;
+                bridgeNodeRight = b;
+            }
+            sentinel.setNext(afterSen);
+            sentinel.setPrev(beforeSen);
+            beforeSen.setNext(sentinel);
+            afterSen.setPrev(sentinel);
+            bridgeNodeLeft.setNext(bridgeNodeRight);
+            bridgeNodeRight.setPrev(bridgeNodeLeft);
+
+            // update size and number of roots.
+            size += heap2.size();
+            numOfRoots += heap2.getNumOfRoots();
+        }
+
     }
 
    /**
@@ -70,16 +242,15 @@ public class FibonacciHeap
     * Returns the number of elements in the heap.
     *   
     */
-    public int size()
-    {
-    	return -123; // should be replaced by student code
+    public int size() {
+    	return size;
     }
     	
     /**
     * public int[] countersRep()
     *
     * Return an array of counters. The i-th entry contains the number of trees of order i in the heap.
-    * (Note: The size of of the array depends on the maximum order of a tree.)  
+    * (Note: The size of the array depends on the maximum order of a tree.)
     * 
     */
     public int[] countersRep()
@@ -173,8 +344,20 @@ public class FibonacciHeap
         int[] arr = new int[100];
         return arr; // should be replaced by student code
     }
-    
-   /**
+
+    public HeapNode getSentinel() {
+        return sentinel;
+    }
+
+    public HeapNode getMin() {
+        return min;
+    }
+
+    public int getNumOfRoots() {
+        return numOfRoots;
+    }
+
+    /**
     * public class HeapNode
     * 
     * If you wish to implement classes other than FibonacciHeap
@@ -184,13 +367,86 @@ public class FibonacciHeap
     public static class HeapNode{
 
     	public int key;
+        public int rank;
+        public boolean isMarked;
+        public HeapNode child;
+        public HeapNode next;
+        public HeapNode prev;
+        public HeapNode parent;
+        public boolean isSentinel;
 
     	public HeapNode(int key) {
     		this.key = key;
+            this.isMarked = false; // initially, the node isn't marked.
+            this.isSentinel = false; // initially, the node isn't a sentinel.
     	}
+
+        public HeapNode(boolean isSentinel) {
+            this.isSentinel = isSentinel;
+        }
 
     	public int getKey() {
     		return this.key;
     	}
+
+       public void setKey(int key) {
+           this.key = key;
+       }
+
+       public int getRank() {
+           return rank;
+       }
+
+       public void setRank(int rank) {
+           this.rank = rank;
+       }
+
+       public boolean isMarked() {
+           return isMarked;
+       }
+
+       public void setMarked(boolean marked) {
+           isMarked = marked;
+       }
+
+       public HeapNode getChild() {
+           return child;
+       }
+
+       public void setChild(HeapNode child) {
+           this.child = child;
+       }
+
+       public HeapNode getNext() {
+           return next;
+       }
+
+       public void setNext(HeapNode next) {
+           this.next = next;
+       }
+
+       public HeapNode getPrev() {
+           return prev;
+       }
+
+       public void setPrev(HeapNode prev) {
+           this.prev = prev;
+       }
+
+       public HeapNode getParent() {
+           return parent;
+       }
+
+       public void setParent(HeapNode parent) {
+           this.parent = parent;
+       }
+
+        public boolean isSentinel() {
+            return isSentinel;
+        }
+
+        public void addChild(HeapNode a) { // TODO: finish this.
+
+        }
     }
 }
