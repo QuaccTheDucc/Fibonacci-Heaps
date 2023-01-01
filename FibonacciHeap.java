@@ -93,7 +93,18 @@ public class FibonacciHeap
                 }
 
                 // now we melded min's children to the forest, and we can start successive linking.
-                successiveLinking();
+                HeapNode[] buckets = successiveLinking();
+
+                sentinel = new HeapNode(true);
+                min = buckets[0];
+                for (HeapNode node : buckets) {
+                    if (node != null) {
+                        if (min.getKey() > node.getKey())
+                            min = node;
+                        sentinel.connect(node);
+                    }
+                }
+
             }
         }
     }
@@ -117,7 +128,7 @@ public class FibonacciHeap
     /**
      * Mimics successive linking process taught in class.
      */
-    private void successiveLinking() {
+    private HeapNode[] successiveLinking() {
         HeapNode[] buckets = new HeapNode[(int) Math.ceil(Math.log1p(size) / Math.log(2))]; // there will be at most log_2(size) buckets.
         HeapNode temp = sentinel.getPrev();
         while (temp != sentinel){
@@ -142,6 +153,7 @@ public class FibonacciHeap
             buckets[rank] = temp2;
             temp = temp.getNext();
         }
+        return buckets;
     }
 
     /**
@@ -409,6 +421,10 @@ public class FibonacciHeap
            isMarked = marked;
        }
 
+        /**
+         *
+         * @return The sentinel child of the heap.
+         */
        public HeapNode getChild() {
            return child;
        }
@@ -445,8 +461,39 @@ public class FibonacciHeap
             return isSentinel;
         }
 
-        public void addChild(HeapNode a) { // TODO: finish this.
+        /**
+         *
+         * @param node The node linked to this heap.
+         * @pre: node.getRank() == getRank()
+         */
+        public void addChild(HeapNode node) {
+            // notice: im not deleting a as a next / prev of other nodes because addChild is a procedure of
+            // successive linking and not a stand-alone method. So, S-L will take the responsibility to delete those.
+            if (getChild() == null){
+                child = new HeapNode(true);
+                child.setParent(this);
+            }
+            child.connect(node);
+        }
 
+        /**
+         * @param node
+         * @pre: isSentinel()
+         */
+        public void connect(HeapNode node){
+            if (getNext() == null){
+                // sentinel has no siblings.
+                setNext(node);
+                setPrev(node);
+                node.setNext(this);
+                node.setPrev(this);
+            } else {
+                HeapNode prevLast = getNext();
+                prevLast.setPrev(node);
+                node.setNext(prevLast);
+                node.setPrev(this);
+                setNext(node);
+            }
         }
     }
 }
