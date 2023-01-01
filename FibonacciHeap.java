@@ -75,36 +75,48 @@ public class FibonacciHeap
                     numOfRoots--;
                     numOfRoots += getNumOfSiblingsOfSen(sentinel);
                 } else {
-                    HeapNode minChild = min.getChild();
-                    HeapNode prevOfMin = min.getPrev();
-                    HeapNode nextOfMin = min.getNext();
-                    HeapNode first = minChild.getPrev();
-                    HeapNode last = minChild.getNext();
+                    if (min.getChild() != null) {
+                        HeapNode minChild = min.getChild();
+                        HeapNode prevOfMin = min.getPrev();
+                        HeapNode nextOfMin = min.getNext();
+                        HeapNode first = minChild.getPrev();
+                        HeapNode last = minChild.getNext();
 
-                    min = null;
-                    size--;
-                    numOfRoots--;
-                    numOfRoots += getNumOfSiblingsOfSen(minChild);
+                        min = null;
+                        size--;
+                        numOfRoots--;
+                        numOfRoots += getNumOfSiblingsOfSen(minChild);
 
-                    first.setNext(nextOfMin);
-                    nextOfMin.setPrev(first);
-                    last.setPrev(prevOfMin);
-                    prevOfMin.setNext(last);
+                        first.setNext(nextOfMin);
+                        nextOfMin.setPrev(first);
+                        last.setPrev(prevOfMin);
+                        prevOfMin.setNext(last);
+                    } else {
+                        HeapNode prevOfMin = min.getPrev();
+                        HeapNode nextOfMin = min.getNext();
+
+                        min = null;
+                        size--;
+                        numOfRoots--;
+
+                        prevOfMin.setNext(nextOfMin);
+                        nextOfMin.setPrev(prevOfMin);
+                    }
                 }
 
-                // now we melded min's children to the forest, and we can start successive linking.
+            }
+            // now we melded min's children to the forest, and we can start successive linking.
+            if (size != 0){
                 HeapNode[] buckets = successiveLinking();
-
                 sentinel = new HeapNode(true);
-                min = buckets[0];
                 for (HeapNode node : buckets) {
                     if (node != null) {
-                        if (min.getKey() > node.getKey())
+                        if (min == null || min.getKey() > node.getKey())
                             min = node;
                         sentinel.connect(node);
                     }
                 }
-
+                numOfRoots = getNumOfSiblingsOfSen(sentinel);
             }
         }
     }
@@ -129,29 +141,31 @@ public class FibonacciHeap
      * Mimics successive linking process taught in class.
      */
     private HeapNode[] successiveLinking() {
-        HeapNode[] buckets = new HeapNode[(int) Math.ceil(Math.log1p(size) / Math.log(2))]; // there will be at most log_2(size) buckets.
-        HeapNode temp = sentinel.getPrev();
-        while (temp != sentinel){
+        int n = (int) Math.ceil(Math.log1p(size) / Math.log(2));
+        HeapNode[] buckets = new HeapNode[n]; // there will be at most log_2(size) buckets.
+        HeapNode temp = sentinel.getNext();
+        for (int i = 0; i < numOfRoots; i++){
             int rank = temp.getRank();
             HeapNode temp2 = temp;
+            temp = temp.getNext();
             while (buckets[rank] != null) {
                 // linking
                 HeapNode a = buckets[rank];
-                buckets[rank] = null;
                 HeapNode b = temp2;
+                buckets[rank] = null;
 
                 if (a.getKey() <= b.getKey()) {
                     a.addChild(b);
                     temp2 = a;
                 } else {
                     b.addChild(a);
-                    temp2 = b;
                 }
+                temp2.setNext(null);
+                temp2.setPrev(null);
 
                 rank++;
             }
             buckets[rank] = temp2;
-            temp = temp.getNext();
         }
         return buckets;
     }
@@ -185,13 +199,13 @@ public class FibonacciHeap
             heap2First.setNext(sentinel);
             heap2Last.setPrev(sentinel);
 
-            min = heap2.getMin();
+            min = heap2.findMin();
             size = heap2.size();
         }
         // implements lazy meld.
         else if (!heap2.isEmpty()) {
             // update min if necessary.
-            HeapNode heap2Min = heap2.getMin();
+            HeapNode heap2Min = heap2.findMin();
             if (heap2Min.getKey() < min.getKey())
                 min = heap2Min;
 
@@ -361,10 +375,6 @@ public class FibonacciHeap
         return sentinel;
     }
 
-    public HeapNode getMin() {
-        return min;
-    }
-
     public int getNumOfRoots() {
         return numOfRoots;
     }
@@ -467,7 +477,7 @@ public class FibonacciHeap
          * @pre: node.getRank() == getRank()
          */
         public void addChild(HeapNode node) {
-            // notice: im not deleting a as a next / prev of other nodes because addChild is a procedure of
+            // notice: im not deleting as a next / prev of other nodes because addChild is a procedure of
             // successive linking and not a stand-alone method. So, S-L will take the responsibility to delete those.
             if (getChild() == null){
                 child = new HeapNode(true);
