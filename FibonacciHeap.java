@@ -109,8 +109,10 @@ public class FibonacciHeap
             if (size != 0){
                 HeapNode[] buckets = successiveLinking();
                 sentinel = new HeapNode(true);
-                for (HeapNode node : buckets) {
+                for (int i = buckets.length - 1; i >= 0; i--) {
+                    HeapNode node = buckets[i];
                     if (node != null) {
+                        node.setRank(i);
                         if (min == null || min.getKey() > node.getKey())
                             min = node;
                         sentinel.connect(node);
@@ -189,7 +191,7 @@ public class FibonacciHeap
     */
     public void meld(FibonacciHeap heap2)
     {
-        if (isEmpty()){
+        if (isEmpty() && !heap2.isEmpty()){
             HeapNode heap2First = heap2.getSentinel().getPrev();
             HeapNode heap2Last = heap2.getSentinel().getNext();
             sentinel = new HeapNode(true);
@@ -201,6 +203,7 @@ public class FibonacciHeap
 
             min = heap2.findMin();
             size = heap2.size();
+            numOfRoots = heap2.getNumOfRoots();
         }
         // implements lazy meld.
         else if (!heap2.isEmpty()) {
@@ -281,11 +284,35 @@ public class FibonacciHeap
     */
     public int[] countersRep()
     {
-    	int[] arr = new int[100];
-        return arr; //	 to be replaced by student code
+        if (isEmpty()) return new int[0];
+
+    	HeapNode temp = sentinel.getNext();
+        int[] ranks = new int[getMaximalRankOfForest(sentinel) + 1];
+        while (temp != sentinel){
+            int rank = temp.getRank();
+            ranks[rank]++;
+            temp = temp.getNext();
+        }
+        return ranks;
     }
-	
-   /**
+
+    /**
+     *
+     * @param sentinel
+     * @return The highest rank of sentinel's siblings.
+     */
+    private int getMaximalRankOfForest(HeapNode sentinel) {
+        HeapNode temp = sentinel.getNext();
+        int maxRank = temp.getRank();
+        while (temp != sentinel){
+            temp = temp.getNext();
+            if (maxRank < temp.getRank())
+                maxRank = temp.getRank();
+        }
+        return maxRank;
+    }
+
+    /**
     * public void delete(HeapNode x)
     *
     * Deletes the node x from the heap.
