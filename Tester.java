@@ -204,5 +204,183 @@ class Tester {
         assertEquals(1, ranks[5]);
         assertEquals(1, ranks[6]);
     }
+
+    @Test
+    void decreaseKey(){
+        FibonacciHeap heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode inserted = heap.insert(1);
+        assertNull(inserted.getParent());
+        heap.decreaseKey(inserted, 1); // case1: the node has no parent, meaning it is a root and
+        // we only need to decrease its key and search check if it's the new min.
+        assertEquals(0, heap.findMin().getKey());
+
+        heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode insertedParent;
+        for (int i = 0; i <= 10; i++){
+            if (i == 10){
+                inserted = heap.insert(i);
+            } else {
+                heap.insert(i);
+            }
+        }
+        heap.deleteMin();
+        insertedParent = inserted.getParent();
+        //System.out.println(inserted.getKey());
+        //System.out.println(insertedParent.getKey());
+        //System.out.println(insertedParent.getParent().getKey());
+        //System.out.println(insertedParent.getParent().getParent().getKey());
+
+        heap.decreaseKey(inserted, 10); // case2: the node has an unmarked parent and no siblings,
+        // we decrease it key to be 0, so it's supposed to be the new min.
+
+        // all the values are from the simulator of https://dichchankinh.com/~galles/visualization/FibonacciHeap.html .
+        assertEquals(0, inserted.getKey());
+        assertEquals(0, heap.findMin().getKey());
+        assertNull(inserted.getParent());
+        assertEquals(0, insertedParent.getRank()); // was 1, went down by 1 so now it's zero.
+        assertNull(insertedParent.getChild());
+        assertTrue(insertedParent.isMarked());
+        assertFalse(inserted.isMarked());
+
+        inserted = insertedParent;
+        insertedParent = insertedParent.getParent();
+
+        heap.decreaseKey(inserted, 10); // case3: the node has an unmarked parent and siblings,
+        // we decrease it key to be -1, so it's supposed to be the new min.
+
+
+        assertEquals(-1, inserted.getKey());
+        assertEquals(-1, heap.findMin().getKey());
+        assertNull(inserted.getParent());
+        assertEquals(1, insertedParent.getRank()); // was 2, went down by 1, so now it's 1.
+        assertEquals(8, insertedParent.getChild().getPrev().getKey());
+        assertTrue(insertedParent.isMarked());
+        assertFalse(inserted.isMarked());
+
+
+        inserted = insertedParent.getChild().getPrev();
+        FibonacciHeap.HeapNode insertedGrandParent = insertedParent.getParent();
+
+        assertEquals(3, insertedGrandParent.getKey());
+        assertTrue(insertedParent.isMarked());
+
+        heap.decreaseKey(inserted, 10); // case4: the node has a marked parent and no siblings,
+        // we decrease it key to be -2, so it's supposed to be the new min.
+
+
+        assertEquals(-2, inserted.getKey());
+        assertEquals(-2, heap.findMin().getKey());
+        assertNull(inserted.getParent());
+        assertEquals(0, insertedParent.getRank()); // was 1, went down by 1, so now it's zero.
+        assertNull(insertedParent.getChild());
+        assertFalse(insertedParent.isMarked()); // cascading cuts made it a root.
+        assertFalse(inserted.isMarked());
+        assertFalse(insertedGrandParent.isMarked()); // 3 is a root.
+
+        int[] keysByOrderLeftToRight = new int[] {7, -2, -1, 0, 1, 3};
+        FibonacciHeap.HeapNode temp = heap.getSentinel().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+    }
+
+    @Test
+    void delete(){
+        // all the values are from the simulator of https://dichchankinh.com/~galles/visualization/FibonacciHeap.html .
+
+        FibonacciHeap heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode inserted = heap.insert(1);
+        assertNull(inserted.getParent());
+        heap.delete(inserted); // case1, inserted = min.
+        assertTrue(heap.isEmpty());
+
+        heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode inserted2 = null, inserted3= null, inserted4 = null, inserted5 = null;
+        for (int i = 0; i <= 10; i++){
+            if (i == 9){
+                inserted = heap.insert(i);
+            } else if (i == 8){
+                inserted2 = heap.insert(i);
+            } else if (i == 4){
+                inserted3 = heap.insert(i);
+            } else if (i == 5){
+                inserted4 = heap.insert(i);
+            } else if (i == 1){
+                inserted5 = heap.insert(i);
+            } else {
+                heap.insert(i);
+            }
+        }
+        heap.deleteMin();
+
+        assertEquals(9, inserted.getKey());
+        heap.delete(inserted); // case2 inserted isn't the min and its parent is unmarked, and it's a child of a node.
+
+        assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
+
+        int[] keysByOrderLeftToRight = new int[] {10, 1 , 3};
+        int[] keysByOrderLeftToRight2 = new int[] {7, 5 , 4};
+        FibonacciHeap.HeapNode temp = heap.getSentinel().getNext();
+        FibonacciHeap.HeapNode temp2 = heap.getSentinel().getPrev().getChild().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+        for (int i = 0; i < keysByOrderLeftToRight2.length; i++){
+            assertEquals(keysByOrderLeftToRight2[i], temp2.getKey());
+            temp2 = temp2.getNext();
+        }
+
+        assertTrue(inserted2 == heap.getSentinel().getPrev().getChild().getNext().getChild().getNext());
+        assertTrue(heap.getSentinel().getPrev().getChild().getNext().isMarked()); // 7 should be marked.
+        assertEquals(8, inserted2.getKey());
+
+
+        heap.delete(inserted2); // case3 parent is marked.
+
+        assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
+        assertTrue(heap.getSentinel().getNext().getNext().isSentinel()); // 1 is the only root according to on-paper debugging work.
+        keysByOrderLeftToRight = new int[] {3,7,2};
+        temp = heap.getSentinel().getNext().getChild().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+        assertEquals(8, heap.size);
+
+        assertEquals(4, inserted3.getKey());
+        assertEquals(3, inserted3.getParent().getKey());
+
+        heap.delete(inserted3);
+        assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
+        assertTrue(heap.getSentinel().getNext().getNext().isSentinel()); // 1 is the only root according to on-paper debugging work.
+        keysByOrderLeftToRight = new int[] {3,7,2};
+        temp = heap.getSentinel().getNext().getChild().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+
+        heap.delete(inserted4);
+        assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
+        keysByOrderLeftToRight = new int[] {3, 1};
+        temp = heap.getSentinel().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+
+        heap.delete(inserted5);
+        assertEquals(2, heap.findMin().getKey()); // 2 still is the min.
+        keysByOrderLeftToRight = new int[] {2, 3};
+        temp = heap.getSentinel().getNext();
+        for (int i = 0; i < keysByOrderLeftToRight.length; i++){
+            assertEquals(keysByOrderLeftToRight[i], temp.getKey());
+            temp = temp.getNext();
+        }
+        assertEquals(5, heap.size());
+
+    }
 }
 

@@ -1,3 +1,5 @@
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * FibonacciHeap
  *
@@ -81,6 +83,7 @@ public class FibonacciHeap
                         HeapNode nextOfMin = min.getNext();
                         HeapNode first = minChild.getPrev();
                         HeapNode last = minChild.getNext();
+                        HeapNode temp = sentinel.getNext();
 
                         min = null;
                         size--;
@@ -91,6 +94,12 @@ public class FibonacciHeap
                         nextOfMin.setPrev(first);
                         last.setPrev(prevOfMin);
                         prevOfMin.setNext(last);
+
+                        while (temp != sentinel){
+                            temp.setParent(null);
+                            temp = temp.getNext();
+                        } // making sure  nodes that have no parents if and only if they are roots. (# note 4 from the forum).
+
                     } else {
                         HeapNode prevOfMin = min.getPrev();
                         HeapNode nextOfMin = min.getNext();
@@ -107,12 +116,18 @@ public class FibonacciHeap
             }
             // now we melded min's children to the forest, and we can start successive linking.
             if (size != 0){
-                HeapNode[] buckets = successiveLinking();
+                HeapNode[] buckets;
+                if (numOfRoots > 1) // only if number of roots is bigger than 1 we shall consolidate.
+                    buckets = successiveLinking();
+                else
+                    buckets = new HeapNode[] {sentinel.getNext()};
                 sentinel = new HeapNode(true);
                 for (int i = buckets.length - 1; i >= 0; i--) {
                     HeapNode node = buckets[i];
                     if (node != null) {
-                        node.setRank(i);
+                        if (buckets.length > 1) // if buckets' length is 1, the tree may not be a binomial tree.
+                            node.setRank(i);
+                        node.setParent(null); // nodes are now roots (just to be sure).
                         if (min == null || min.getKey() > node.getKey())
                             min = node;
                         sentinel.connect(node);
@@ -162,8 +177,10 @@ public class FibonacciHeap
                 } else {
                     b.addChild(a);
                 }
+
                 temp2.setNext(null);
                 temp2.setPrev(null);
+                temp2.setRank(temp2.getRank() + 1);
 
                 rank++;
             }
@@ -320,8 +337,13 @@ public class FibonacciHeap
     *
     */
     public void delete(HeapNode x) 
-    {    
-    	return; // should be replaced by student code
+    {
+        if (x == min) deleteMin();
+        else {
+            int delta = 1 + (x.getKey() - min.getKey());
+            decreaseKey(x, delta); // now x's key is the min's key minus 1, making it the new minimum.
+            deleteMin();
+        }
     }
 
    /**
@@ -332,10 +354,79 @@ public class FibonacciHeap
     */
     public void decreaseKey(HeapNode x, int delta)
     {    
-    	return; // should be replaced by student code
+    	// we assume x is in the heap, meaning the heap isn't empty.
+        x.setKey(x.getKey() - delta);
+        if (x.getParent() != null) { // x isn't a root.
+            HeapNode parent = x.getParent();
+            boolean wasMarked = parent.isMarked();
+            if (x.getKey() < parent.getKey()){
+                cutFromParent(x);
+                if (wasMarked) {
+                    cascadingCuts(parent);
+                }
+            }
+        }
+
+        // update min if required.
+        if (x.getKey() < min.getKey())
+            min = x;
     }
 
-   /**
+    /**
+     *
+     * @param node
+     * @pre node is marked.
+     */
+    private void cascadingCuts(HeapNode node) {
+        boolean wasMarked;
+        do {// if a node is marked it assures that its parent exists,
+            // otherwise it would be a root and from that it is unmarked.
+            HeapNode temp = node.getParent();
+            wasMarked = temp.isMarked();
+            cutFromParent(node);
+            node = temp;
+        } while (wasMarked);
+    }
+
+    /**
+     *
+     * @param node
+     * @pre temp.getParent() != null
+     * cuts node from its parent, and if parent is non - root it marks it if it is unmarked.
+     */
+    private void cutFromParent(HeapNode node) {
+        HeapNode parent = node.getParent();
+        parent.setRank(parent.getRank()-1);
+        if (parent.getParent() != null){ // parent isn't root.
+            parent.setMarked(true);
+        }
+
+        HeapNode sentinelOfNode = node;
+        while (!sentinelOfNode.isSentinel()){
+            sentinelOfNode = sentinelOfNode.getNext();
+        }
+
+        if (getNumOfSiblingsOfSen(sentinelOfNode) == 1){ // meaning node has no siblings.
+            parent.setChild(null);
+        } else { // node has at least one sibling.
+            HeapNode prevOfNode = node.getPrev();
+            HeapNode nextOfNode = node.getNext();
+            prevOfNode.setNext(nextOfNode);
+            nextOfNode.setPrev(prevOfNode);
+        }
+
+        sentinel.connect(node);
+        node.setParent(null);
+        node.setMarked(false);
+
+        numOfRoots++;
+        if (node.getKey() < min.getKey())
+            min = node;
+
+
+    }
+
+    /**
     * public int nonMarked() 
     *
     * This function returns the current number of non-marked items in the heap
@@ -511,6 +602,7 @@ public class FibonacciHeap
                 child.setParent(this);
             }
             child.connect(node);
+            node.setParent(this);
         }
 
         /**
