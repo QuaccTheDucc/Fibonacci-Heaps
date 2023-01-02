@@ -1,5 +1,7 @@
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -11,6 +13,7 @@ class Tester {
         assertTrue(heap.isEmpty());
         heap.insert(5);
         assertFalse(heap.isEmpty());
+        assertEquals(heap.size(), heap.nonMarked());
         heap.deleteMin();
         assertTrue(heap.isEmpty());
     }
@@ -29,12 +32,14 @@ class Tester {
         assertEquals(97, heap.getSentinel().getNext().getKey());
         assertEquals(65, heap.getSentinel().getNext().getNext().getKey());
         assertEquals(1, heap.getSentinel().getNext().getNext().getNext().getKey());
+        assertEquals(heap.size(), heap.nonMarked());
 
         heap.insert(0);
         for (int i = 1; i <= 50; i++){
             assertEquals(i-1, heap.findMin().getKey());
             heap.deleteMin();
             assertEquals(i, heap.findMin().getKey());
+            assertEquals(heap.size(), heap.nonMarked());
         }
         for (int i = 0; i <= 49; i++){
             heap.insert(i);
@@ -44,11 +49,13 @@ class Tester {
             assertEquals(i-1, heap.findMin().getKey());
             heap.deleteMin();
             assertEquals(i, heap.findMin().getKey());
+            assertEquals(heap.size(), heap.nonMarked());
         }
         for (int i = 1; i <= 101; i++){
             heap.deleteMin();
         }
         assertNull(heap.findMin());
+        assertEquals(heap.size(), heap.nonMarked());
 
     }
 
@@ -92,6 +99,7 @@ class Tester {
         assertEquals(1, heap1.findMin().getKey());
         assertEquals(100, heap1.size());
         assertEquals(100, heap1.getNumOfRoots());
+        assertEquals(heap1.size(), heap1.nonMarked());
 
         heap1 = new FibonacciHeap();
         heap2 = new FibonacciHeap();
@@ -107,7 +115,7 @@ class Tester {
         assertEquals(1, heap1.findMin().getKey());
         assertEquals(100, heap1.size());
         assertEquals(50 + 3, heap1.getNumOfRoots()); // 50 for heap1 and 3 for heap2 (number of ones in binary of 50).
-
+        assertEquals(heap1.size(), heap1.nonMarked());
 
         heap1 = new FibonacciHeap();
         heap2 = new FibonacciHeap();
@@ -121,7 +129,7 @@ class Tester {
         assertEquals(1, heap1.findMin().getKey());
         assertEquals(51, heap1.size());
         assertEquals(1 + 3, heap1.getNumOfRoots()); // 1 for heap1 and 3 for heap2 (number of ones in binary of 50).
-
+        assertEquals(heap1.size(), heap1.nonMarked());
 
         heap1 = new FibonacciHeap();
         heap2 = new FibonacciHeap();
@@ -135,7 +143,7 @@ class Tester {
         assertEquals(1, heap1.findMin().getKey());
         assertEquals(51, heap1.size());
         assertEquals(1 + 3, heap1.getNumOfRoots()); // 3 for heap1 and 1 for heap2 (number of ones in binary of 50).
-
+        assertEquals(heap1.size(), heap1.nonMarked());
 
         heap1 = new FibonacciHeap();
         heap2 = new FibonacciHeap();
@@ -146,7 +154,7 @@ class Tester {
         assertEquals(0, heap1.findMin().getKey());
         assertEquals(2, heap1.size());
         assertEquals(2, heap1.getNumOfRoots()); // 1 for heap1 and  heap2.
-
+        assertEquals(heap1.size(), heap1.nonMarked());
 
     }
 
@@ -157,12 +165,15 @@ class Tester {
         for (int i = 100; i >= 0; i--){
             heap.insert(i);
             assertEquals(101 - i, heap.size());
+            assertEquals(heap.size(), heap.nonMarked());
         }
         for (int i = 1; i <= 101; i++){
             heap.deleteMin();
             assertEquals(101 - i, heap.size());
+            assertEquals(heap.size(), heap.nonMarked());
         }
         assertEquals(0, heap.size());
+        assertEquals(heap.size(), heap.nonMarked());
     }
 
     @Test
@@ -290,7 +301,9 @@ class Tester {
         // all the values are from the simulator of https://dichchankinh.com/~galles/visualization/FibonacciHeap.html .
 
         FibonacciHeap heap = new FibonacciHeap();
+        assertEquals(0, heap.nonMarked());
         FibonacciHeap.HeapNode inserted = heap.insert(1);
+        assertEquals(1, heap.nonMarked());
         assertNull(inserted.getParent());
         heap.delete(inserted); // case1, inserted = min.
         assertTrue(heap.isEmpty());
@@ -314,6 +327,7 @@ class Tester {
         }
         heap.deleteMin();
 
+
         assertEquals(9, inserted.getKey());
         heap.delete(inserted); // case2 inserted isn't the min and its parent is unmarked, and it's a child of a node.
 
@@ -334,9 +348,11 @@ class Tester {
 
         assertTrue(inserted2 == heap.getSentinel().getPrev().getChild().getNext().getChild().getNext());
         assertTrue(heap.getSentinel().getPrev().getChild().getNext().isMarked()); // 7 should be marked.
+        assertEquals(9, heap.size());
+        assertEquals(8, heap.nonMarked());
+
+
         assertEquals(8, inserted2.getKey());
-
-
         heap.delete(inserted2); // case3 parent is marked.
 
         assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
@@ -348,10 +364,11 @@ class Tester {
             temp = temp.getNext();
         }
         assertEquals(8, heap.size);
+        assertEquals(8, heap.nonMarked()); // every node is not marked.
 
-        assertEquals(4, inserted3.getKey());
+
         assertEquals(3, inserted3.getParent().getKey());
-
+        assertEquals(4, inserted3.getKey());
         heap.delete(inserted3);
         assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
         assertTrue(heap.getSentinel().getNext().getNext().isSentinel()); // 1 is the only root according to on-paper debugging work.
@@ -361,6 +378,8 @@ class Tester {
             assertEquals(keysByOrderLeftToRight[i], temp.getKey());
             temp = temp.getNext();
         }
+        assertEquals(7, heap.size());
+        assertEquals(6, heap.nonMarked());
 
         heap.delete(inserted4);
         assertEquals(1, heap.findMin().getKey()); // 1 still is the min.
@@ -370,6 +389,7 @@ class Tester {
             assertEquals(keysByOrderLeftToRight[i], temp.getKey());
             temp = temp.getNext();
         }
+        assertEquals(6, heap.nonMarked());
 
         heap.delete(inserted5);
         assertEquals(2, heap.findMin().getKey()); // 2 still is the min.
@@ -380,7 +400,25 @@ class Tester {
             temp = temp.getNext();
         }
         assertEquals(5, heap.size());
+        assertEquals(5, heap.nonMarked());
 
+    }
+
+    @Test
+    void kMin(){
+        FibonacciHeap heap = new FibonacciHeap();
+        assertEquals(0, FibonacciHeap.kMin(heap, 0).length);
+
+        int m = 1;
+        int[] arr = new int[m];
+        for (int i = 0; i <= 16; i++){
+            int n = 5*i;
+            heap.insert(n);
+            if (i != 0 && i <= m) arr[i-1] = n;
+        }
+        heap.deleteMin(); // now heap is a binomial heap.
+
+        assertArrayEquals(arr, FibonacciHeap.kMin(heap, m));
     }
 }
 

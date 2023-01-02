@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class FibonacciHeap
 {
 
-    public HeapNode min;
-    public HeapNode sentinel;
-    public int size;
-    public int numOfRoots;
+    HeapNode min;
+    HeapNode sentinel;
+    int size;
+    int numOfRoots;
+    int nonMarked;
+    static int links = 0;
+    static int cuts = 0;
 
    /**
     * public boolean isEmpty()
@@ -51,6 +54,7 @@ public class FibonacciHeap
         }
         size++;
         numOfRoots++;
+        nonMarked++;
     	return newNode;
     }
 
@@ -63,6 +67,7 @@ public class FibonacciHeap
     public void deleteMin()
     {
         if (!isEmpty()){
+            nonMarked--; // min is always a root so, it has to be not marked.
             if (size == 1){ // if min is the only node in the heap.
                 size = 0;
                 numOfRoots = 0;
@@ -177,6 +182,7 @@ public class FibonacciHeap
                 } else {
                     b.addChild(a);
                 }
+                links ++;
 
                 temp2.setNext(null);
                 temp2.setPrev(null);
@@ -221,6 +227,7 @@ public class FibonacciHeap
             min = heap2.findMin();
             size = heap2.size();
             numOfRoots = heap2.getNumOfRoots();
+            nonMarked = heap2.nonMarked();
         }
         // implements lazy meld.
         else if (!heap2.isEmpty()) {
@@ -278,6 +285,7 @@ public class FibonacciHeap
             // update size and number of roots.
             size += heap2.size();
             numOfRoots += heap2.getNumOfRoots();
+            nonMarked += heap2.nonMarked();
         }
 
     }
@@ -395,10 +403,12 @@ public class FibonacciHeap
      * cuts node from its parent, and if parent is non - root it marks it if it is unmarked.
      */
     private void cutFromParent(HeapNode node) {
+        cuts++;
         HeapNode parent = node.getParent();
         parent.setRank(parent.getRank()-1);
-        if (parent.getParent() != null){ // parent isn't root.
+        if (parent.getParent() != null && !parent.isMarked()){ // parent isn't root.
             parent.setMarked(true);
+            nonMarked--;
         }
 
         HeapNode sentinelOfNode = node;
@@ -417,13 +427,14 @@ public class FibonacciHeap
 
         sentinel.connect(node);
         node.setParent(null);
-        node.setMarked(false);
+        if (node.isMarked()) {
+            nonMarked++; // the node becomes not marked.
+            node.setMarked(false);
+        }
 
         numOfRoots++;
         if (node.getKey() < min.getKey())
             min = node;
-
-
     }
 
     /**
@@ -433,7 +444,7 @@ public class FibonacciHeap
     */
     public int nonMarked() 
     {    
-        return -232; // should be replaced by student code
+        return nonMarked;
     }
 
    /**
@@ -447,7 +458,7 @@ public class FibonacciHeap
     */
     public int potential() 
     {    
-        return -234; // should be replaced by student code
+        return numOfRoots + 2 * (size - nonMarked);
     }
 
    /**
@@ -460,7 +471,7 @@ public class FibonacciHeap
     */
     public static int totalLinks()
     {    
-    	return -345; // should be replaced by student code
+    	return links;
     }
 
    /**
@@ -472,7 +483,7 @@ public class FibonacciHeap
     */
     public static int totalCuts()
     {    
-    	return -456; // should be replaced by student code
+    	return cuts;
     }
 
      /**
@@ -484,11 +495,56 @@ public class FibonacciHeap
     * ###CRITICAL### : you are NOT allowed to change H. 
     */
     public static int[] kMin(FibonacciHeap H, int k)
-    {    
-        int[] arr = new int[100];
-        return arr; // should be replaced by student code
+    {
+        if (k == 0) return new int[0];
+
+        FibonacciHeap help = new FibonacciHeap();
+        help.myInsert(H.findMin()); // the root is the min.
+
+        int[] kMin = new int[k];
+        int j = 0;
+        while (j < k){ // k iterations
+            int minKey = help.findMin().getKey();
+            HeapNode original = help.findMin().getOriginal();
+
+            kMin[j] = minKey;
+            insertChildren(help, original); // each insert is O(1) and there are at most deg(H) children.
+
+            help.deleteMin(); // there are at most 2*deg(H) + 1 roots, so the runtime is at most O(deg(H)) (WC).
+            j++;
+        } // overall runtime of O(k*deg(H)) WC.
+        return kMin;
     }
 
+    /**
+     * helper method for kMin, inserts the node's key to the heap and sets the original of the new inserted node
+     * of the heap to be the original node.
+     * @param node
+     */
+    private void myInsert(HeapNode node) {
+        HeapNode inserted = insert(node.getKey());
+        inserted.setOriginal(node);
+    }
+
+    /**
+     * inserts with myInsert all of node's children to h.
+     * @param h
+     * @param node
+     */
+    private static void insertChildren(FibonacciHeap h, HeapNode node) {
+        if (node.getChild() != null) {
+            HeapNode temp = node.getChild().getNext();
+            while (!temp.isSentinel()){
+                h.myInsert(temp);
+                temp = temp.getNext();
+            }
+        }
+    }
+
+    /**
+     *
+     * @return The sentinel of the heap.
+     */
     public HeapNode getSentinel() {
         return sentinel;
     }
@@ -623,6 +679,18 @@ public class FibonacciHeap
                 node.setPrev(this);
                 setNext(node);
             }
+        }
+
+        // this is for the kMin method, it has no use otherwise. it saves the original node.
+        // so, at the end original.getKey() == key.
+        private HeapNode original;
+
+        public void setOriginal(HeapNode node) {
+            original = node;
+        }
+
+        public HeapNode getOriginal() {
+            return original;
         }
     }
 }
