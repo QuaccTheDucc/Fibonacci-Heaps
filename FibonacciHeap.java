@@ -303,7 +303,7 @@ public class FibonacciHeap
     *
     * Return an array of counters. The i-th entry contains the number of trees of order i in the heap.
     * (Note: The size of the array depends on the maximum order of a tree.)
-    * 
+    * Complexity: O(n)
     */
     public int[] countersRep()
     {
@@ -323,6 +323,7 @@ public class FibonacciHeap
      *
      * @param sentinel
      * @return The highest rank of sentinel's siblings.
+     * Complexity: O(n)
      */
     private int getMaximalRankOfForest(HeapNode sentinel) {
         HeapNode temp = sentinel.getNext();

@@ -420,5 +420,51 @@ class Tester {
 
         assertArrayEquals(arr, FibonacciHeap.kMin(heap, m));
     }
+
+    @Test
+    void potential(){
+        FibonacciHeap heap = new FibonacciHeap();
+        assertEquals(heap.potential(), 0);
+        FibonacciHeap.HeapNode[] arr = new FibonacciHeap.HeapNode[101];
+        for (int i = 100; i >= 0 ; i--) {
+            arr[i] = heap.insert(i);
+            assertEquals(heap.potential(), heap.size);
+        }
+        for (int i = 50; i >= 0 ; i--) {
+            heap.delete(arr[i]);
+            assertEquals(heap.potential() - heap.numOfRoots, 2* (heap.size()-heap.nonMarked));
+        }
+
+        FibonacciHeap heap1 = new FibonacciHeap();
+        FibonacciHeap.HeapNode[] arr1 = new FibonacciHeap.HeapNode[10];
+        for (int i = 0; i <= 9; i++) {
+            arr1[i] = heap1.insert(i);
+        }
+
+        heap1.delete(arr1[0]);
+        assertEquals(heap1.potential(), 2);
+        assertEquals(heap1.numOfRoots, 2);
+        heap1.delete(arr1[8]);
+        assertEquals(heap1.potential(), 4);
+        assertEquals(heap1.nonMarked, heap1.size - 1);
+        heap1.delete(arr1[7]);
+        assertEquals(heap1.potential(), 3);
+        assertEquals(heap1.numOfRoots, 3);
+        assertEquals(heap1.size, heap1.nonMarked);
+        /*
+        FibonacciHeap.HeapNode s = heap1.sentinel.getPrev();
+        while(s != heap1.sentinel){
+            System.out.print(s.getKey());
+            s = s.getPrev();
+        }
+        */
+        heap1.delete(arr1[2]);
+
+        assertEquals(arr1[1].getRank(), 2);
+        assertEquals(arr1[3].getRank(), 1);
+        assertEquals(heap1.numOfRoots, 2);
+        assertEquals(heap1.potential(), 2);
+
+    }
 }
 
