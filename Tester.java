@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class Tester {
-
+    /*
     @Test
     void isEmpty() {
         FibonacciHeap heap = new FibonacciHeap();
@@ -451,20 +451,90 @@ class Tester {
         assertEquals(heap1.potential(), 3);
         assertEquals(heap1.numOfRoots, 3);
         assertEquals(heap1.size, heap1.nonMarked);
-        /*
         FibonacciHeap.HeapNode s = heap1.sentinel.getPrev();
         while(s != heap1.sentinel){
             System.out.print(s.getKey());
             s = s.getPrev();
         }
-        */
         heap1.delete(arr1[2]);
 
         assertEquals(arr1[1].getRank(), 2);
         assertEquals(arr1[3].getRank(), 1);
         assertEquals(heap1.numOfRoots, 2);
         assertEquals(heap1.potential(), 2);
+        System.out.printf("%d %d %d %d",heap.links, heap.cuts, heap1.links, heap1.cuts);
 
+
+
+    }
+
+    @Test
+    void cuts_and_links(){
+        ///note: when checking this function put all other functions as commented
+        FibonacciHeap heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode[] arr = new FibonacciHeap.HeapNode[11];
+        for (int i = 10; i >= 0 ; i--) {
+            arr[i] = heap.insert(i);
+        }
+        heap.delete(arr[0]);
+        assertEquals(heap.links, 8);
+        heap.delete(arr[10]);
+        assertEquals(heap.cuts, 1);
+        heap.delete(arr[6]);
+        assertEquals(heap.cuts, 2);
+        assertEquals(heap.links, 8);
+        heap.delete(arr[7]);
+        assertEquals(heap.cuts, 4);
+        assertEquals(heap.links, 9);
+    }
+    */
+    @Test
+    void question1(){
+        //when using this tester, you must comment all the other functions
+        //Tester for q1:
+        /*
+        int m = (int) Math.pow(2, 5);
+        FibonacciHeap heap = new FibonacciHeap();
+        FibonacciHeap.HeapNode[] arr = new FibonacciHeap.HeapNode[m];
+        long start = System.currentTimeMillis();
+        for (int i = m-1; i >= 0 ; i--) {
+            arr[i] = heap.insert(i);
+        }
+        heap.insert(-1);
+        heap.deleteMin();
+
+        int log = (int)(Math.log(m)/Math.log(2));
+        while (log > 0){
+            heap.decreaseKey(arr[m-(int)(Math.pow(2,log))+1], m+1);
+            log -= 1;
+        }
+        heap.decreaseKey(arr[m-2], m+1);
+        long end = System.currentTimeMillis();
+        /*
+        FibonacciHeap.HeapNode s = heap.sentinel.getPrev();
+        while(s != heap.sentinel){
+            System.out.println(s.getKey());
+            s = s.getPrev();
+        }
+
+        long dif = end - start;
+        System.out.printf("Potential: %d, Links: %d, Cuts: %d, Runtime: %d",heap.potential(),heap.links,heap.cuts, dif);
+        */
+        //tester for q2:
+        //int m = (int)Math.pow(3, 10)-1;
+        int m = 4*7;
+        FibonacciHeap heap = new FibonacciHeap();
+        long start = System.currentTimeMillis();
+        for (int i = 0; i <= m; i++) {
+            heap.insert(i);
+        }
+        for (int i = 0; i <= 3*m/4; i++) {
+            heap.deleteMin();
+        }
+        long end = System.currentTimeMillis();
+        System.out.printf("Potential: %d, Links: %d, Cuts: %d, Runtime: %d, m = %d \n",heap.potential(),heap.links,heap.cuts,end - start, m);
+        System.out.println(Math.log(m)/Math.log(2));
+        System.out.println(Math.log(m)/Math.log(3));
     }
 }
 
